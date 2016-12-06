@@ -55,10 +55,6 @@ def cinematic_preview(password, writer):
 
 
 
-
-
-
-
 class SDisplay:
   """
    _      _  _       _   _   _   _   _   _              _  _
@@ -155,7 +151,7 @@ def launch_pass_hack(scr):
         hack_password('abc', 8, disp)
       else:
         hack_password(INPUT, 8, disp)
-      SIG['message'] = 'H A C K E D'
+      SIG['message'] = '! H A C K E D ! '
     
     t = Thread(target=commence_hack)
     t.start()
