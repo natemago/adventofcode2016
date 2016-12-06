@@ -151,7 +151,7 @@ def launch_pass_hack(scr):
         hack_password('abc', 8, disp)
       else:
         hack_password(INPUT, 8, disp)
-      SIG['message'] = '! H A C K E D ! '
+      SIG['message'] = '! H A C K E D !'
     
     t = Thread(target=commence_hack)
     t.start()
@@ -164,13 +164,15 @@ def launch_pass_hack(scr):
       while True:
         disp.lock.acquire()
         try:
-          scr.addstr(y, x, '***', color_pair(c1));
-          scr.addstr(y, x + 4, SIG['message'], color_pair(c2));
-          scr.addstr(y, x + len(SIG['message']) + 5, '***', color_pair(c1));
+          scr.addstr(y, 0, ''.join([' ' for i in range(0, tx)]), color_pair(c1))
+          scr.addstr(y, x, '*** ', color_pair(c1))
+          scr.addstr(y, x + 4, SIG['message'], color_pair(c2))
+          scr.addstr(y, x + len(SIG['message']) + 4, ' ***', color_pair(c1))
           scr.refresh()
         finally:
           disp.lock.release()
         if SIG['stop']:
+          pass
           break
         time.sleep(0.5)
         t = c1
@@ -183,6 +185,7 @@ def launch_pass_hack(scr):
     signal.pause()
     SIG['stop'] = True
     t.join()
+    t2.join()
     time.sleep(1)
   finally:
     scr.clear()
