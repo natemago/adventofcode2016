@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from curses import wrapper, color_pair, init_pair, COLOR_YELLOW, COLOR_BLACK, COLOR_GREEN, COLOR_RED, COLOR_WHITE, curs_set
+from curses import wrapper, color_pair, init_pair, init_color, COLOR_YELLOW, COLOR_BLACK, COLOR_GREEN, COLOR_RED, COLOR_WHITE, curs_set
 from hashlib import md5
 from random import randint
 
@@ -8,7 +8,10 @@ import sys
 from threading import Thread, Lock
 import time
 import signal
+from random import randint
+import os
 
+os.environ['TERM'] = 'xterm-256color'
 
 INPUT = 'uqwqemis'
 
@@ -124,6 +127,26 @@ class SDisplay:
     finally:
       self.lock.release()
     
+    
+def print_random_chars(scr, lock, n, tx, ty, sx, sy, sw, sh):
+  lock.acquire()
+  try:
+    
+    for i in range(0, n):
+      x = randint(1, tx-2)
+      y = randint(1, ty-2)
+      if (x > sx and x < (sx + sw) )\
+         and (y > sy and y < (sy + sh)):
+        continue
+      color = randint(100, 199)
+      c = '%x' % randint(0, 15)
+      if randint(0,100) % 2 == 0:
+        c = ' '
+      scr.addstr(y, x, c, color_pair(color))
+    scr.refresh()
+  finally:
+    lock.release()
+
 
 
 def launch_pass_hack(scr):
@@ -132,6 +155,11 @@ def launch_pass_hack(scr):
     init_pair(2, COLOR_RED, COLOR_BLACK)
     init_pair(3, COLOR_WHITE, COLOR_BLACK)
     init_pair(4, COLOR_GREEN, COLOR_BLACK)
+    
+    for i in range(0, 100):
+      init_color(100+i, i*2, i*2, (i+1)*5 - 1)
+      init_pair(100+i, 100+i, COLOR_BLACK)
+    
     curs_set(False)
     scr.clear()
     scr.bkgd(' ', color_pair(3)) # init in default
@@ -181,6 +209,16 @@ def launch_pass_hack(scr):
     
     t2 = Thread(target=lambda: print_hacked(ty//2-3))
     t2.start()
+    
+    def print_rnd():
+      while True:
+        print_random_chars(scr, disp.lock, 200, tx, ty, tx//2-25, ty//2-6, 50, 12)
+        time.sleep(0.1)
+        if SIG['stop']:
+          break
+    
+    t3 = Thread(target=print_rnd)
+    t3.start()
     
     signal.pause()
     SIG['stop'] = True
