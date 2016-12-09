@@ -4,25 +4,33 @@ import re
 import sys
 
 
-
+inp_file = 'input'
 
 if 'test' in sys.argv:
-  print('Test')
-  sys.exit(0)
+  inp_file = 'test-input'
 
 
 decompressed = ''
 
 def count_size(s):
   l = 0
+  m = False
   for c in s:
     if c in ' \t\n\r':
       continue
-    l += 1
+    if c == '(' and not m:
+      m = True
+      continue
+    if c == ')' and m:
+      m = False
+      continue
+    if not m:
+      l += 1
   return l
 
 total = 0
-with open('input') as f:
+gc = 0
+with open(inp_file) as f:
   compressed = f.read()
   marker = ''
   i = 0
@@ -37,11 +45,15 @@ with open('input') as f:
       cnt = int(marker[0])
       repeat = int(marker[1])
       chunk = compressed[i+1: i+cnt+1]
-      compressed = ''.join([chunk for j in range(0, repeat)]) +compressed[i+1+cnt:]
+      chunk = ''.join([chunk for j in range(0, repeat)])
+      compressed = chunk +compressed[i+1+cnt:]
+      #print(' [c]>', chunk)
+      #print(' [s]>', compressed)
       i = 0
       marker = ''
-      total += count_size(chunk)
-      print(' >', len(compressed))
+      #print(' [t]>', total)
+      if gc % 1000 == 0:
+        print(' >', len(compressed), ' [t]>', total)
       continue
     else:
       if not marker:
@@ -50,5 +62,6 @@ with open('input') as f:
       else:
         marker += c
     i += 1
+    gc += 1
 
 print (total)
