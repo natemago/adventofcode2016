@@ -6,11 +6,12 @@ import re
 
 class Bot:
   
-  def __init__(self, name, rules, bots, value=None):
+  def __init__(self, name, rules, bots, value=None, outputs=None):
     self.name = name
     self.value = value
     self.rules = rules
     self.bots = bots
+    self.outputs = outputs
   
   def add_value(self, value):
     if self.value is not None:
@@ -34,6 +35,9 @@ class Bot:
   def give_value_to(self, out, value):
     if out['out'] == 'output':
       print('Bot %s: %s -> output[%s]' %(str(self), str(value), out['to']))
+      #if self.outputs:
+      self.outputs[out['to']] = int(value)
+          
     else:
       self.bots[out['to']].add_value(value)
   
@@ -46,6 +50,8 @@ class Bot:
 
 BOTS = {}
 ACTIONS = []
+OUTPUTS = {}
+
 
 with open('input') as f:
   for line in f:
@@ -60,7 +66,7 @@ with open('input') as f:
       low_out = m.group('low_out')
       high_out = m.group('high_out')
         
-      b = Bot(name=bot, rules={'high':{'to': high, 'out': high_out}, 'low': {'to': low, 'out': low_out}}, bots=BOTS)
+      b = Bot(name=bot, rules={'high':{'to': high, 'out': high_out}, 'low': {'to': low, 'out': low_out}}, bots=BOTS, outputs=OUTPUTS)
       BOTS[bot] = b
     elif line.startswith('value'):
       m = re.match('value (?P<value>\d+) goes to bot (?P<bot>\d+)', line)
@@ -72,3 +78,6 @@ with open('input') as f:
 
 for bot, value in ACTIONS:
   BOTS[bot].add_value(value)
+
+print(OUTPUTS)
+print('Part 2:', OUTPUTS['0'] * OUTPUTS['1'] * OUTPUTS['2'])
