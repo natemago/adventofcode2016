@@ -110,8 +110,7 @@ if 'p2' in sys.argv:
 # BFS
 
 q = Queue()
-min_steps = None
-B = None
+
 played_moves = {state(floors, 0)}
 
 total_on_last_floor = sum([len(f) for f in floors])
@@ -124,45 +123,70 @@ for devices in get_all_possible_conf(floors[0]):
   
   if is_conf_ok(cfloors[0]) and is_conf_ok(cfloors[1]):
     print('Move ', devices, ' to floor 1 ', cfloors[1], ' and 0 is ', cfloors[0])
-    q.put((devices, cfloors, 1, 0, 1, ['from 0 to 1 dev: %s' % str(devices)]))
+    q.put((devices, cfloors, 1, 0, 1, ['0 -> 1: %s' % str(devices)]))
     played_moves.add(state(cfloors, 1))
   print('----')
 
-while not q.empty():
-  entry = q.get()
-  devs, floors, on_floor_number, from_floor_number, steps, backtrack = entry
-  curr_floor = floors[on_floor_number]
-  if on_floor_number == 3:
-    print ('ON 4:', curr_floor, '; steps: ', steps)
-    if len(curr_floor) == total_on_last_floor:
-      print('All on floor 4. Total steps: ', steps)
-      if min_steps is None:
-        min_steps = steps
-        B = backtrack
-      elif min_steps > steps:
-        min_steps = steps
-        B = backtrack
+from threading import Thread, Lock
+class track:
+  def __init__(self):
+    self.min_steps = None
+    self.backtrack = None
+    self.lock = Lock()
   
-  if min_steps is not None and (steps+1) > min_steps:
-    continue
-  for i in allowed_floors(on_floor_number):
-    for devices in get_all_possible_conf(curr_floor):
-      if i == from_floor_number and the_same(devices, devs):
-        continue
-        
-      cfloors = calc_floors(floors, on_floor_number, i, devices)
-      
-      curr_floor_conf = cfloors[on_floor_number]
-      next_floor_conf = cfloors[i]
-      if is_conf_ok(curr_floor_conf) and is_conf_ok(next_floor_conf):
-        s = state(cfloors, i)
-        if s in played_moves:
+  def set_min(self, val, backtrack):
+    try:
+      self.lock.acquire()
+      if self.min_steps is None or self.min_steps > val:
+        self.min_steps = val
+        self.backtrack = backtrack
+    finally:
+      self.lock.release()
+
+T = track()
+
+
+def search_all_solutions_space_bfs():
+
+  while not q.empty():
+    entry = q.get()
+    devs, floors, on_floor_number, from_floor_number, steps, backtrack = entry
+    curr_floor = floors[on_floor_number]
+    if on_floor_number == 3:
+      print ('ON 4:', curr_floor, '; steps: ', steps, ' - best: ', T.min_steps or 'Unknown')
+      if len(curr_floor) == total_on_last_floor:
+        print('All on floor 4. Total steps: ', steps)
+        T.set_min(steps, backtrack)
+    
+    if T.min_steps is not None and (steps+1) > T.min_steps:
+      continue
+    for i in allowed_floors(on_floor_number):
+      for devices in get_all_possible_conf(curr_floor):
+        if i == from_floor_number and the_same(devices, devs):
           continue
-        played_moves.add(s)
-        #print('To floor ', i, ' -> ', next_floor_conf, ' from loor ',on_floor_number,' -> ', curr_floor_conf )
-        q.put((devices, cfloors, i, on_floor_number, steps + 1, backtrack + ['from %d to %d dev: %s' % (on_floor_number, i, devices)]))
+          
+        cfloors = calc_floors(floors, on_floor_number, i, devices)
+        
+        curr_floor_conf = cfloors[on_floor_number]
+        next_floor_conf = cfloors[i]
+        if is_conf_ok(curr_floor_conf) and is_conf_ok(next_floor_conf):
+          s = state(cfloors, i)
+          if s in played_moves:
+            continue
+          played_moves.add(s)
+          #print('To floor ', i, ' -> ', next_floor_conf, ' from loor ',on_floor_number,' -> ', curr_floor_conf )
+          q.put((devices, cfloors, i, on_floor_number, steps + 1, backtrack + ['%d -> %d: %s' % (on_floor_number, i, devices)]))
   
 
-print('Min steps: ', min_steps)
+threads = [Thread(target=search_all_solutions_space_bfs) for i in range(0, 4)]
+
+for t in threads:
+  t.start()
+
+for t in threads:
+  t.join()
+  
+
+print('Min steps: ', T.min_steps)
 #print(B)
-print('Backtrack:\n', '\n'.join(B))
+print('Backtrack:\n' + '\n'.join(T.backtrack))
