@@ -3,22 +3,36 @@
 
 from hashlib import md5
 import re
+from threading import Thread
 
 
 inp = 'ahsbgdzn'
 
 class OTPKeyGenerator:
-  def __init__(self, salt=inp, num_hashes=1):
+  def __init__(self, salt=inp, num_hashes=1, init_first=0):
     self.index = 0
     self.salt = salt
     self.num_hashes = num_hashes
-    
+    self.cache = {}
+    if init_first:
+      self.init_first(init_first)
+  
+  
+  def init_first(self, n):
+    for i in range(0, n):
+      self.cache[i] = self.hsh(i)
+      print(i)
+  
   def hsh(self, idx):
+    hsh = self.cache.get(idx)
+    if hsh:
+      return hsh
     n = self.num_hashes
     hsh = self.salt + str(idx)
     while n:
       hsh = md5((hsh).encode('utf-8') ).hexdigest()
       n -= 1
+    self.cache[idx] = hsh
     return hsh
   
   def is_key(self, hsh, idx, rch):
@@ -45,8 +59,11 @@ import sys
 
 if 'part2' in sys.argv:
   nh = 2016
+initfirst = 0
+if 'initfirst' in sys.argv:
+  initfirst = int(sys.argv[-1])
 
-g = OTPKeyGenerator(num_hashes=nh)
+g = OTPKeyGenerator(num_hashes=nh, init_first=initfirst)
 cnt = 0
 
 while True:
