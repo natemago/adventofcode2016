@@ -58,7 +58,7 @@ nh = 1
 import sys
 
 if 'part2' in sys.argv:
-  nh = 2016
+  nh = 2017 # 2016 + the first hashing
 initfirst = 0
 if 'initfirst' in sys.argv:
   initfirst = int(sys.argv[-1])
