@@ -377,6 +377,10 @@ for i in range(1, 301):
   print(" %5d |     %4d |          %2.5f | %4d"%(i, s, log(i, 3), i - 3**floor(log(i, 3))))
 
 print('-----------')
+print('Test F(1): ', f(1))
+print('Test F(2): ', f(2))
+print('Test F(3): ', f(3))
+print('Test F(4): ', f(4))
 print('Test F(5): ', f(5))
 print('Test F(9): ', f(9))
 print('Test F(253) should be 10: ', f(253))
