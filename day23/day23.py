@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+from collections import deque
+
 class BunnyHQComputer:
   
   def __init__(self):
@@ -13,11 +15,17 @@ class BunnyHQComputer:
       'jnz': self.jnz,
       'tgl': self.tgl
     }
+    self.instcnt = 0
+    self.opthoops = 0
+    self.lbb = deque(maxlen=5)
+    self.lbbpc = deque(maxlen=5)
   
   def __repr__(self):
     return 'R[%5d|%5d|%5d|%5d] @ %2d - %s' % (self.regs['a'],self.regs['b'],
                                              self.regs['c'],self.regs['d'],
                                              self.pc, self.mem[self.pc] if self.pc >=0 and self.pc < len(self.mem) else 'OUT')
+  def stats(self):
+    return '%d instuctions executed. Optimized jumps: %d' %(self.instcnt, self.opthoops)
   
   def cpy(self, args):
     x = args[0]
@@ -87,23 +95,78 @@ class BunnyHQComputer:
   def strmem(self):
     return '\n'.join([str(m) for m in self.mem])
   
+  
+  def opt_lookahead(self):
+    # addition
+    """
+    inc a
+    dec c
+    jnz c -2
+     => a = a + c
+    """
+    if self.pc + 2 < len(self.mem):
+      instrs = self.mem[self.pc:self.pc+3]
+      if instrs == [['inc','a'],['dec','c'],['jnz','c','-2']]:
+        self.regs['a'] += self.regs['c']
+        self.regs['c'] = 0
+        self.pc += 3
+        return True
+      elif instrs == [['inc','a'],['dec','d'],['jnz','d','-2']]:
+        self.regs['a'] += self.regs['d']
+        self.regs['d'] = 0
+        self.pc += 3
+        return True
+        
+    return False
+  
+  def opt_lookbehind(self):
+    #return False
+    self.lbb.append(self.mem[self.pc])
+    self.lbbpc.append(self.pc)
+    #print(self.lbb)
+    if list(self.lbb)[-3:] == [['dec', 'd'],['jnz', 'd', '-5'],['cpy', 'b','c']]:
+        """
+        a = b * d
+        c = 0
+        d = 0 
+        PC = PC + 1
+        """
+        self.regs['a'] = self.regs['b'] * (self.regs['d']+1)
+        self.regs['c'] = 0
+        self.regs['d'] = 0
+        self.pc = self.lbbpc[-3] + 2
+        
+        #self.lbb = deque(maxlen=5)
+        #self.lbbpc = deque(maxlen=5)
+        
+        #print(self, self.lbbpc, self.lbb)
+        #raise Exception('OPTLB')
+        return True
+    return False
+    
   def exec(self):
     inc = 0
     while True:
       inc += 1
       if inc % 10000 == 0:
-        print(computer)
+        #print(computer)
+        pass
       if self.pc < 0 or self.pc >= len(self.mem):
         break
+      if self.opt_lookahead() or self.opt_lookbehind():
+        print('OPT JUMP -> ', self)
+        self.opthoops += 1
+        continue
       instr = self.mem[self.pc]
       op = self.instr_set[instr[0]]
       try:
-        #print(self)
         op(instr[1:])
-        #print(self)
+        print(' '.join(instr), '  >>', self.regs , 'PC:', self.pc)
       except:
         print ('Failure on instruction:',instr)
         raise
+      self.instcnt += 1
+    
 
 
 def read_program(inpf):
@@ -124,6 +187,19 @@ else:
   mem = read_program('input')
 computer.mem = mem
 
+"""
+for i in [7,5,3]:
+  computer = BunnyHQComputer()
+  computer.mem = mem
+  computer.regs['a'] = i
+  print(i)
+  computer.exec()
+  print(i, ' -> ', computer)  
+
+
+
+sys.exit(0)
+"""
 computer.regs['a'] = 7
 
 if 'p2' in sys.argv:
@@ -133,6 +209,8 @@ computer.exec()
 
 print('------------------------')
 print('Final state:', computer)
+print('Stats: ', computer.stats())
 print('Key:', computer.regs['a'])
+
 
   
